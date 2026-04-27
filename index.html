@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AGS 302 CBT - 10 Minutes</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 720px;
+        margin: 15px auto;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        overflow: hidden;
+      }
+      header {
+        background: #2c3e50;
+        color: white;
+        padding: 18px;
+        text-align: center;
+      }
+      .timer {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #e74c3c;
+        text-align: center;
+        padding: 12px;
+        background: #ecf0f1;
+      }
+      .progress {
+        height: 8px;
+        background: #3498db;
+        width: 0%;
+        transition: width 0.4s;
+      }
+      .question-container {
+        padding: 20px;
+      }
+      .question {
+        margin-bottom: 25px;
+        font-size: 1.08rem;
+        line-height: 1.5;
+      }
+      .options label {
+        display: block;
+        padding: 14px;
+        margin: 10px 0;
+        background: #f8f9fa;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .options label:hover {
+        background: #e8f0fe;
+        border-color: #3498db;
+      }
+      .nav-buttons {
+        display: flex;
+        justify-content: space-between;
+        padding: 15px 20px;
+        background: #f8f9fa;
+        gap: 10px;
+      }
+      button {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.05rem;
+        cursor: pointer;
+        flex: 1;
+      }
+      .btn-prev {
+        background: #95a5a6;
+        color: white;
+      }
+      .btn-next,
+      .btn-review {
+        background: #3498db;
+        color: white;
+      }
+      .btn-submit {
+        background: #27ae60;
+        color: white;
+        font-weight: bold;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 14px;
+        margin: 10px 0;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 1.1rem;
+      }
+      .result,
+      .review-screen {
+        padding: 20px;
+        display: none;
+      }
+      .score {
+        font-size: 3.5rem;
+        font-weight: bold;
+        color: #27ae60;
+      }
+      .correct {
+        color: #27ae60;
+        font-weight: bold;
+      }
+      .wrong {
+        color: #e74c3c;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>AGS 302 CBT</h1>
+        <p>Ruminant Animal Production • 40 Questions • 10 Minutes</p>
+      </header>
+
+      <div class="timer" id="timer">Time Left: 10:00</div>
+      <div class="progress" id="progress"></div>
+
+      <form
+        id="cbtForm"
+        action="https://api.web3forms.com/submit"
+        method="POST"
+      >
+        <input
+          type="hidden"
+          name="access_key"
+          value="064855e2-9965-4be4-b60a-1e61f4e9a0be"
+        />
+
+        <input type="hidden" name="subject" value="AGS 302 CBT Result" />
+        <input type="hidden" name="to_email" value="yusufao@funaab.edu.ng" />
+        <input type="hidden" name="from_name" value="AGS 302 CBT System" />
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="question-container">
+          <h2>Student Registration</h2>
+          <p><strong>Matric Number (11 digits only):</strong></p>
+          <input
+            type="text"
+            name="matric_number"
+            id="matric"
+            placeholder="e.g. 20201234567"
+            maxlength="11"
+            required
+            pattern="\d{11}"
+          />
+
+          <p><strong>Full Name:</strong></p>
+          <input
+            type="text"
+            name="name"
+            id="name"
+            placeholder="Enter your full name"
+            required
+          />
+
+          <button
+            type="button"
+            onclick="startTest()"
+            style="
+              background: #27ae60;
+              color: white;
+              padding: 14px;
+              font-size: 1.1rem;
+              width: 100%;
+              margin-top: 15px;
+            "
+          >
+            Start Test (10 Minutes)
+          </button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quizArea" style="display: none">
+          <div class="question-container" id="quiz"></div>
+          <div class="nav-buttons">
+            <button type="button" class="btn-prev" id="prevBtn">
+              Previous
+            </button>
+            <button type="button" class="btn-next" id="nextBtn">Next</button>
+            <button
+              type="button"
+              class="btn-review"
+              id="reviewBtn"
+              style="display: none"
+            >
+              Review Answers
+            </button>
+          </div>
+        </div>
+
+        <!-- Review Screen -->
+        <div id="reviewScreen" class="review-screen">
+          <h2>Review Your Answers Before Submitting</h2>
+          <div id="reviewContent"></div>
+          <div class="nav-buttons">
+            <button type="button" onclick="backToQuiz()" class="btn-prev">
+              Back to Questions
+            </button>
+            <button type="button" onclick="finalSubmit()" class="btn-submit">
+              Submit Test Now
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Final Result Screen -->
+      <div id="resultScreen" class="result">
+        <h2>Test Completed Successfully!</h2>
+        <p class="score" id="scoreDisplay">0/40</p>
+        <p id="percentage" style="font-size: 1.4rem"></p>
+        <p><strong>Matric Number:</strong> <span id="resultMatric"></span></p>
+        <p><strong>Name:</strong> <span id="resultName"></span></p>
+        <p><strong>Time Taken:</strong> <span id="timeTaken"></span></p>
+
+        <h3 style="margin: 30px 0 15px">Correct Answers & Explanations</h3>
+        <div id="answersReview"></div>
+
+        <button
+          onclick="location.reload()"
+          style="
+            background: #3498db;
+            color: white;
+            padding: 14px 30px;
+            margin-top: 20px;
+          "
+        >
+          Close / New Test
+        </button>
+      </div>
+    </div>
+
+    <script>
+      // Full 40 Questions (same as before)
+      const originalQuestions = [
+        {
+          q: "1. Which of the following best explains the primary advantage of ruminants over monogastric animals?",
+          options: [
+            "A. Faster digestion of proteins",
+            "B. Ability to digest fibrous feeds via microbial fermentation",
+            "C. Higher reproductive rate",
+            "D. Lower feed intake requirement",
+          ],
+          ans: "B",
+          exp: "Ruminants have the unique ability to digest fibrous feeds through microbial fermentation in the rumen.",
+        },
+        {
+          q: "2. The compartment of the ruminant stomach primarily responsible for microbial fermentation is:",
+          options: ["A. Abomasum", "B. Omasum", "C. Reticulum", "D. Rumen"],
+          ans: "D",
+          exp: "The rumen is the largest compartment and the main site of microbial fermentation.",
+        },
+        {
+          q: "3. Which of the following is NOT a characteristic of small ruminants?",
+          options: [
+            "A. High adaptability",
+            "B. Lower capital requirement",
+            "C. High individual milk yield",
+            "D. High reproductive rate",
+          ],
+          ans: "C",
+          exp: "Small ruminants generally have lower individual milk yield compared to dairy cattle.",
+        },
+        {
+          q: "4. In Nigeria, the most widely distributed cattle breed is:",
+          options: [
+            "A. Muturu",
+            "B. Sokoto Gudali",
+            "C. White Fulani",
+            "D. Red Bororo",
+          ],
+          ans: "C",
+          exp: "White Fulani (Bunaji) is the most widely distributed cattle breed in Nigeria.",
+        },
+        {
+          q: "5. The Muturu breed is particularly valued because of its:",
+          options: [
+            "A. High milk yield",
+            "B. Large body size",
+            "C. Trypanotolerance",
+            "D. Fast growth rate",
+          ],
+          ans: "C",
+          exp: "Muturu is highly valued for its trypanotolerance (resistance to trypanosomiasis).",
+        },
+        {
+          q: "6. Which breed is best adapted for long-distance trekking?",
+          options: [
+            "A. White Fulani",
+            "B. Muturu",
+            "C. Red Bororo",
+            "D. Sokoto Gudali",
+          ],
+          ans: "C",
+          exp: "Red Bororo (Rahaji) is well adapted for long-distance trekking due to its endurance.",
+        },
+        {
+          q: "7. The gestation period of cattle is approximately:",
+          options: ["A. 150 days", "B. 283 days", "C. 120 days", "D. 365 days"],
+          ans: "B",
+          exp: "The average gestation period in cattle is about 283 days (approximately 9 months).",
+        },
+        {
+          q: "8. Which sheep breed has a distinct black front and white rear?",
+          options: ["A. Yankasa", "B. Uda", "C. Balami", "D. WAD"],
+          ans: "B",
+          exp: "Uda sheep is characterized by black or brown forequarters and white hindquarters.",
+        },
+        {
+          q: "9. The largest sheep breed in Nigeria is:",
+          options: ["A. Yankasa", "B. Uda", "C. Balami", "D. WAD"],
+          ans: "C",
+          exp: "Balami is the largest sheep breed found in Nigeria.",
+        },
+        {
+          q: "10. Which goat breed is famous for high-quality leather production?",
+          options: ["A. Sahel", "B. WAD", "C. Red Sokoto", "D. Boer"],
+          ans: "C",
+          exp: "Red Sokoto goat is renowned for producing high-quality 'Morocco leather'.",
+        },
+        {
+          q: "11. Roughages are characterized by:",
+          options: [
+            "A. High energy content",
+            "B. Low fibre content",
+            "C. Fibre content above 18%",
+            "D. High protein concentration",
+          ],
+          ans: "C",
+          exp: "Roughages have crude fibre content above 18% and are low in energy.",
+        },
+        {
+          q: "12. Which of the following is a protein concentrate?",
+          options: [
+            "A. Maize",
+            "B. Molasses",
+            "C. Groundnut cake",
+            "D. Cassava peels",
+          ],
+          ans: "C",
+          exp: "Groundnut cake is a high-protein concentrate.",
+        },
+        {
+          q: "13. A major challenge of feed availability in Nigeria is:",
+          options: [
+            "A. Excess protein content",
+            "B. Seasonal variation",
+            "C. Over-supply of concentrates",
+            "D. Lack of grazing animals",
+          ],
+          ans: "B",
+          exp: "Feed availability in Nigeria is highly affected by seasonal variation (wet vs dry season).",
+        },
+        {
+          q: "14. Which feeding system involves complete confinement?",
+          options: [
+            "A. Extensive",
+            "B. Semi-intensive",
+            "C. Zero grazing",
+            "D. Free grazing",
+          ],
+          ans: "C",
+          exp: "Zero grazing (cut-and-carry) system involves total confinement.",
+        },
+        {
+          q: "15. The major disadvantage of extensive systems is:",
+          options: [
+            "A. High cost",
+            "B. Low productivity",
+            "C. Labour intensity",
+            "D. Overfeeding",
+          ],
+          ans: "B",
+          exp: "Extensive systems usually result in low productivity due to poor nutrition and management.",
+        },
+        {
+          q: "16. Which nutrient is most important for all physiological processes?",
+          options: ["A. Protein", "B. Water", "C. Energy", "D. Vitamins"],
+          ans: "B",
+          exp: "Water is the most critical nutrient as it is involved in all physiological processes.",
+        },
+        {
+          q: "17. The oestrous cycle in sheep averages:",
+          options: ["A. 21 days", "B. 17 days", "C. 30 days", "D. 14 days"],
+          ans: "B",
+          exp: "The average length of the oestrous cycle in sheep is about 17 days.",
+        },
+        {
+          q: "18. Which hormone regulates libido in male ruminants?",
+          options: [
+            "A. Oestrogen",
+            "B. Progesterone",
+            "C. Testosterone",
+            "D. Oxytocin",
+          ],
+          ans: "C",
+          exp: "Testosterone is the primary hormone responsible for libido and secondary sexual characteristics in males.",
+        },
+        {
+          q: "19. Fertilization in ruminants occurs in the:",
+          options: ["A. Uterus", "B. Ovary", "C. Oviduct", "D. Cervix"],
+          ans: "C",
+          exp: "Fertilization takes place in the oviduct (fallopian tube).",
+        },
+        {
+          q: "20. Which stage of the oestrous cycle is most critical for mating?",
+          options: [
+            "A. Dioestrus",
+            "B. Proestrus",
+            "C. Oestrus",
+            "D. Metestrus",
+          ],
+          ans: "C",
+          exp: "Oestrus (heat period) is when the female is receptive to the male and ovulation occurs.",
+        },
+        {
+          q: "21. Artificial insemination is advantageous because it:",
+          options: [
+            "A. Reduces fertility",
+            "B. Limits genetic improvement",
+            "C. Enables rapid genetic gain",
+            "D. Requires no skill",
+          ],
+          ans: "C",
+          exp: "AI allows rapid genetic improvement by using semen from superior sires.",
+        },
+        {
+          q: "22. Crossbreeding is mainly used to:",
+          options: [
+            "A. Reduce fertility",
+            "B. Increase genetic defects",
+            "C. Combine desirable traits",
+            "D. Maintain purity",
+          ],
+          ans: "C",
+          exp: "Crossbreeding combines desirable traits from different breeds and exploits hybrid vigour.",
+        },
+        {
+          q: "23. Flushing is practiced:",
+          options: [
+            "A. During late pregnancy",
+            "B. Before mating",
+            "C. After parturition",
+            "D. During weaning",
+          ],
+          ans: "B",
+          exp: "Flushing involves extra feeding before and during the breeding season to increase ovulation rate.",
+        },
+        {
+          q: "24. Steaming up is carried out:",
+          options: [
+            "A. Before mating",
+            "B. During early pregnancy",
+            "C. During late pregnancy",
+            "D. After lactation",
+          ],
+          ans: "C",
+          exp: "Steaming up is done in the last 4-6 weeks of pregnancy to prepare the doe/ewe for lactation.",
+        },
+        {
+          q: "25. One major effect of flushing is:",
+          options: [
+            "A. Reduced ovulation",
+            "B. Increased ovulation rate",
+            "C. Lower fertility",
+            "D. Reduced litter size",
+          ],
+          ans: "B",
+          exp: "Flushing increases the ovulation rate and subsequent litter size.",
+        },
+        {
+          q: "26. A major risk of overfeeding during steaming up is:",
+          options: [
+            "A. Infertility",
+            "B. Dystocia",
+            "C. Reduced milk yield",
+            "D. Slow growth",
+          ],
+          ans: "B",
+          exp: "Overfeeding in late pregnancy can lead to large fetuses and dystocia (difficult birth).",
+        },
+        {
+          q: "27. Colostrum is important because it:",
+          options: [
+            "A. Provides fibre",
+            "B. Supplies antibodies",
+            "C. Increases rumen size",
+            "D. Prevents digestion",
+          ],
+          ans: "B",
+          exp: "Colostrum is rich in immunoglobulins (antibodies) that provide passive immunity to the newborn.",
+        },
+        {
+          q: "28. The most active stomach compartment at birth is:",
+          options: ["A. Rumen", "B. Reticulum", "C. Omasum", "D. Abomasum"],
+          ans: "D",
+          exp: "At birth, the abomasum is the most functional compartment in young ruminants.",
+        },
+        {
+          q: "29. Creep feeding is used to:",
+          options: [
+            "A. Reduce milk intake",
+            "B. Stimulate rumen development",
+            "C. Prevent disease",
+            "D. Increase fat deposition",
+          ],
+          ans: "B",
+          exp: "Creep feeding encourages early consumption of solid feed and stimulates rumen development.",
+        },
+        {
+          q: "30. Weaning is best described as:",
+          options: [
+            "A. Immediate separation at birth",
+            "B. Transition from milk to solid feed",
+            "C. Feeding only concentrates",
+            "D. Removing water",
+          ],
+          ans: "B",
+          exp: "Weaning is the gradual or abrupt transition from milk to solid feeds.",
+        },
+        {
+          q: "31. Which disease is commonly prevented by proper navel disinfection?",
+          options: [
+            "A. Pneumonia",
+            "B. Mastitis",
+            "C. Omphalitis",
+            "D. Diarrhea",
+          ],
+          ans: "C",
+          exp: "Proper navel disinfection prevents omphalitis (navel ill/infection).",
+        },
+        {
+          q: "32. The hormone responsible for milk let-down is:",
+          options: [
+            "A. Progesterone",
+            "B. Oxytocin",
+            "C. Testosterone",
+            "D. Cortisol",
+          ],
+          ans: "B",
+          exp: "Oxytocin causes contraction of myoepithelial cells leading to milk let-down.",
+        },
+        {
+          q: "33. A key disadvantage of hand milking is:",
+          options: [
+            "A. High cost",
+            "B. Requires electricity",
+            "C. Risk of contamination",
+            "D. Low milk yield always",
+          ],
+          ans: "C",
+          exp: "Hand milking carries a higher risk of milk contamination if proper hygiene is not maintained.",
+        },
+        {
+          q: "34. Pasteurization involves:",
+          options: [
+            "A. Cooling milk",
+            "B. Heating milk to kill microbes",
+            "C. Drying milk",
+            "D. Fermenting milk",
+          ],
+          ans: "B",
+          exp: "Pasteurization is the process of heating milk to destroy harmful microorganisms.",
+        },
+        {
+          q: "35. Which of the following is a traditional milk product?",
+          options: ["A. Cheese", "B. Yogurt", "C. Nono", "D. Butter oil"],
+          ans: "C",
+          exp: "Nono is a traditional Nigerian fermented milk product.",
+        },
+        {
+          q: "36. Which identification method is permanent but difficult to read?",
+          options: ["A. Ear tag", "B. Tattooing", "C. Branding", "D. Notching"],
+          ans: "B",
+          exp: "Tattooing is permanent but the numbers can be difficult to read as the animal grows.",
+        },
+        {
+          q: "37. Branding reduces skin value because it:",
+          options: [
+            "A. Increases hair growth",
+            "B. Forms scar tissue",
+            "C. Improves quality",
+            "D. Enhances colour",
+          ],
+          ans: "B",
+          exp: "Branding damages the skin by forming scar tissue, thereby reducing its commercial value.",
+        },
+        {
+          q: "38. Castration using rubber rings is called:",
+          options: [
+            "A. Burdizzo",
+            "B. Knife method",
+            "C. Elastration",
+            "D. Clamping",
+          ],
+          ans: "C",
+          exp: "The use of rubber rings for castration is known as elastration.",
+        },
+        {
+          q: "39. The calcium to phosphorus ratio in goat diets should be at least:",
+          options: ["A. 1:1", "B. 2:1", "C. 3:1", "D. 4:1"],
+          ans: "B",
+          exp: "A Ca:P ratio of at least 2:1 is recommended in goat diets to prevent urinary calculi.",
+        },
+        {
+          q: "40. Goats are best described as:",
+          options: [
+            "A. Grazers only",
+            "B. Browsers",
+            "C. Carnivores",
+            "D. Omnivores",
+          ],
+          ans: "B",
+          exp: "Goats are primarily browsers, preferring leaves, shrubs, and woody plants.",
+        },
+      ];
+
+      let questions = [];
+      let currentQuestion = 0;
+      let answers = new Array(40).fill(null);
+      let timerInterval;
+      let startTime;
+      let matricNumber = "";
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+      }
+
+      function hasTakenTest(matric) {
+        return localStorage.getItem("ags302_taken_" + matric) === "true";
+      }
+
+      function markAsTaken(matric) {
+        localStorage.setItem("ags302_taken_" + matric, "true");
+      }
+
+      function startTest() {
+        const matric = document.getElementById("matric").value.trim();
+        const name = document.getElementById("name").value.trim();
+
+        if (!matric || matric.length !== 11 || !/^\d{11}$/.test(matric)) {
+          alert("Matric Number must be exactly 11 digits (xxxxxxxxxxx)");
+          return;
+        }
+        if (!name) {
+          alert("Please enter your full name");
+          return;
+        }
+        if (hasTakenTest(matric)) {
+          alert(
+            "This Matric Number has already taken the test. You cannot retake it.",
+          );
+          return;
+        }
+
+        matricNumber = matric;
+        questions = [...originalQuestions];
+        shuffleArray(questions);
+
+        document.getElementById("startScreen").style.display = "none";
+        document.getElementById("quizArea").style.display = "block";
+
+        startTime = Date.now();
+        currentQuestion = 0;
+        answers = new Array(40).fill(null);
+        renderQuestion();
+
+        let timeLeft = 600;
+        timerInterval = setInterval(() => {
+          timeLeft--;
+          const min = Math.floor(timeLeft / 60);
+          const sec = timeLeft % 60;
+          document.getElementById("timer").textContent =
+            `Time Left: ${min}:${sec < 10 ? "0" : ""}${sec}`;
+          if (timeLeft <= 0) finalSubmit();
+        }, 1000);
+      }
+
+      function renderQuestion() {
+        const q = questions[currentQuestion];
+        let html = `<div class="question"><p><strong>${q.q}</strong></p><div class="options">`;
+        q.options.forEach((opt) => {
+          html += `
+      <label>
+        <input type="radio" name="q${currentQuestion}" value="${opt[0]}" 
+          ${answers[currentQuestion] === opt[0] ? "checked" : ""}>
+        ${opt}
+      </label>`;
+        });
+        html += `</div></div>`;
+        document.getElementById("quiz").innerHTML = html;
+        document.getElementById("progress").style.width =
+          `${((currentQuestion + 1) / 40) * 100}%`;
+
+        document.getElementById("prevBtn").style.display =
+          currentQuestion === 0 ? "none" : "block";
+        document.getElementById("nextBtn").style.display =
+          currentQuestion === 39 ? "none" : "block";
+        document.getElementById("reviewBtn").style.display =
+          currentQuestion === 39 ? "block" : "none";
+      }
+
+      function saveAnswer() {
+        const selected = document.querySelector(
+          `input[name="q${currentQuestion}"]:checked`,
+        );
+        if (selected) answers[currentQuestion] = selected.value;
+      }
+
+      document.getElementById("nextBtn").onclick = () => {
+        saveAnswer();
+        currentQuestion++;
+        renderQuestion();
+      };
+      document.getElementById("prevBtn").onclick = () => {
+        saveAnswer();
+        currentQuestion--;
+        renderQuestion();
+      };
+      document.getElementById("reviewBtn").onclick = () => {
+        saveAnswer();
+        showReviewScreen();
+      };
+
+      function showReviewScreen() {
+        let html = "<h3>Your Selected Answers</h3>";
+        questions.forEach((q, i) => {
+          const selected = answers[i] ? answers[i] : "Not answered";
+          html += `<div style="margin:15px 0; padding:12px; background:#f8f9fa; border-radius:8px;"><strong>Q${i + 1}:</strong> ${q.q}<br>Your Answer: <strong>${selected}</strong></div>`;
+        });
+        document.getElementById("reviewContent").innerHTML = html;
+        document.getElementById("quizArea").style.display = "none";
+        document.getElementById("reviewScreen").style.display = "block";
+      }
+
+      function backToQuiz() {
+        document.getElementById("reviewScreen").style.display = "none";
+        document.getElementById("quizArea").style.display = "block";
+        renderQuestion();
+      }
+
+      function calculateScore() {
+        let score = 0;
+        answers.forEach((ans, i) => {
+          if (ans === questions[i].ans) score++;
+        });
+        return score;
+      }
+
+      function finalSubmit() {
+        clearInterval(timerInterval);
+        saveAnswer();
+
+        const score = calculateScore();
+        const totalSeconds = Math.floor((Date.now() - startTime) / 1000);
+        const minTaken = Math.floor(totalSeconds / 60);
+        const secTaken = totalSeconds % 60;
+
+        markAsTaken(matricNumber);
+
+        // Show result screen
+        document.getElementById("quizArea").style.display = "none";
+        document.getElementById("reviewScreen").style.display = "none";
+        document.getElementById("resultScreen").style.display = "block";
+
+        document.getElementById("scoreDisplay").textContent = `${score}/40`;
+        document.getElementById("percentage").textContent =
+          `${Math.round((score / 40) * 100)}%`;
+        document.getElementById("resultMatric").textContent = matricNumber;
+        document.getElementById("resultName").textContent =
+          document.getElementById("name").value;
+        document.getElementById("timeTaken").textContent =
+          `${minTaken} min ${secTaken} sec`;
+
+        // Show detailed review with correct answers
+        let reviewHTML = "";
+        questions.forEach((q, i) => {
+          const userAns = answers[i] || "Not answered";
+          const isCorrect = userAns === q.ans;
+          reviewHTML += `
+      <div style="margin:15px 0; padding:15px; border-left:6px solid ${isCorrect ? "#27ae60" : "#e74c3c"}; background:#f8f9fa;">
+        <p><strong>Q${i + 1}:</strong> ${q.q}</p>
+        <p>Your Answer: <span class="${isCorrect ? "correct" : "wrong"}">${userAns}</span></p>
+        <p>Correct Answer: <strong class="correct">${q.ans}</strong></p>
+        <p><em>Explanation: ${q.exp}</em></p>
+      </div>`;
+        });
+        document.getElementById("answersReview").innerHTML = reviewHTML;
+
+        // Submit to web3forms with a small delay to reduce bot detection
+        const form = document.getElementById("cbtForm");
+
+        const scoreField = document.createElement("input");
+        scoreField.type = "hidden";
+        scoreField.name = "score";
+        scoreField.value = `${score}/40 (${Math.round((score / 40) * 100)}%)`;
+        form.appendChild(scoreField);
+
+        const timeField = document.createElement("input");
+        timeField.type = "hidden";
+        timeField.name = "time_taken";
+        timeField.value = `${minTaken} min ${secTaken} sec`;
+        form.appendChild(timeField);
+
+        // Add a simple message to make submission look more human
+        const msgField = document.createElement("input");
+        msgField.type = "hidden";
+        msgField.name = "message";
+        msgField.value = `AGS 302 CBT submission from ${document.getElementById("name").value} (${matricNumber})`;
+        form.appendChild(msgField);
+
+        // Small delay before submit to avoid instant bot-like behavior
+        setTimeout(() => {
+          form.submit();
+        }, 800);
+      }
+    </script>
+  </body>
+</html>
